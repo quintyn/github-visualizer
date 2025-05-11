@@ -176,6 +176,9 @@
   }
 }
 @layer utilities {
+  .static {
+    position: static;
+  }
   .mx-auto {
     margin-inline: auto;
   }

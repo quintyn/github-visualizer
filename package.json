@@ -10,6 +10,8 @@
     "tailwind:init": "tailwindcss init -p"
   },
   "dependencies": {
+    "@octokit/rest": "^21.1.1",
+    "dagre": "^0.8.5",
     "my-visualizer": "file:",
     "next": "15.3.2",
     "react": "^19.0.0",
@@ -19,6 +21,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4.1.5",
+    "@types/dagre": "^0.7.52",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
