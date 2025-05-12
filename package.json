@@ -12,6 +12,7 @@
   "dependencies": {
     "@octokit/rest": "^21.1.1",
     "dagre": "^0.8.5",
+    "framer-motion": "^12.11.0",
     "my-visualizer": "file:",
     "next": "15.3.2",
     "react": "^19.0.0",

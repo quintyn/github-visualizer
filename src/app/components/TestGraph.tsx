@@ -1,24 +1,29 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import ReactFlow, { MiniMap, Controls, Node, Edge, Position } from 'reactflow';
+import ReactFlow, {
+  MiniMap,
+  Controls,
+  Node,
+  Edge,
+  Position,
+  useReactFlow,
+  ReactFlowProvider,
+} from 'reactflow';
 import 'reactflow/dist/style.css';
 import dagre from 'dagre';
+import { motion, AnimatePresence } from 'framer-motion';
 
 type TestGraphProps = {
   repo: string;
 };
 
-// Sample fallback graph when no repo is loaded
 const staticNodes: Node[] = [
   { id: '1', position: { x: 0, y: 0 }, data: { label: 'fileA.ts' }, type: 'default' },
   { id: '2', position: { x: 200, y: 100 }, data: { label: 'fileB.ts' }, type: 'default' },
 ];
 const staticEdges: Edge[] = [{ id: 'e1-2', source: '1', target: '2' }];
 
-/**
- * Arrange nodes in a left-to-right flow using dagre
- */
 const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
@@ -54,28 +59,44 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
   };
 };
 
-export default function TestGraph({ repo }: TestGraphProps) {
+function GraphInner({ repo }: TestGraphProps) {
   const [nodes, setNodes] = useState<Node[]>(staticNodes);
   const [edges, setEdges] = useState<Edge[]>(staticEdges);
+  const [isGraphReady, setIsGraphReady] = useState(false);
+  const [graphMode, setGraphMode] = useState<'code' | 'contributors'>('code');
   const [showMiniMap, setShowMiniMap] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const { fitView } = useReactFlow();
 
   useEffect(() => {
+    let cancelled = false;
+
     if (!repo) {
       setNodes(staticNodes);
       setEdges(staticEdges);
+      setIsGraphReady(true);
       return;
     }
 
-    fetch(`/api/fetch-files?repo=${repo}`)
+    setIsGraphReady(false);
+
+    const endpoint =
+      graphMode === 'code' ? '/api/fetch-files' : '/api/fetch-contributors';
+
+    fetch(`${endpoint}?repo=${repo}`)
       .then((res) => res.json())
       .then((data) => {
-        if (!data.nodes || !data.edges) return;
+        if (cancelled || !data.nodes || !data.edges) return;
 
         const rawNodes: Node[] = data.nodes.map((node: { id: string }) => ({
           id: node.id,
-          data: { label: node.id.split('/').pop() || node.id }, // Just the filename
-          position: { x: 0, y: 0 }, // Dagre will calculate layout
+          data: {
+            label:
+              graphMode === 'code'
+                ? node.id.split('/').pop() || node.id
+                : node.id,
+          },
+          position: { x: 0, y: 0 },
           type: 'default',
         }));
 
@@ -90,9 +111,30 @@ export default function TestGraph({ repo }: TestGraphProps) {
         const layouted = getLayoutedElements(rawNodes, rawEdges);
         setNodes(layouted.nodes);
         setEdges(layouted.edges);
+        setIsGraphReady(true);
       })
-      .catch((err) => console.error('Error fetching graph data:', err));
-  }, [repo]);
+      .catch((err) => {
+        if (!cancelled) {
+          console.error('Error fetching graph data:', graphMode, err);
+          setIsGraphReady(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [repo, graphMode]);
+
+  useEffect(() => {
+    if (!isGraphReady) return;
+    requestAnimationFrame(() => {
+      try {
+        fitView({ padding: 0.2 });
+      } catch (err) {
+        console.warn('fitView error:', err);
+      }
+    });
+  }, [isGraphReady, fitView]);
 
   const exportToJSON = () => {
     const dataStr = JSON.stringify({ nodes, edges }, null, 2);
@@ -100,33 +142,58 @@ export default function TestGraph({ repo }: TestGraphProps) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${repo || 'graph'}.json`;
+    link.download = `${repo || 'graph'}-${graphMode}.json`;
     link.click();
     URL.revokeObjectURL(url);
   };
 
   return (
     <div className={`${isFullscreen ? 'fixed inset-0 z-[9999]' : 'w-full h-full'} bg-white dark:bg-zinc-800`}>
-      {/* Top bar with info and controls */}
-      <div className="flex justify-between items-center px-4 py-2 border-b border-zinc-700 dark:bg-zinc-800">
-        <p className="text-sm text-zinc-500 truncate">
-          {!repo ? 'Showing sample dependency graph.' : <>Loaded repo: <code>{repo}</code></>}
-        </p>
+      {/* Top controls */}
+      <div className="flex flex-wrap justify-between items-center gap-4 px-4 py-2 border-b border-zinc-700 dark:bg-zinc-800">
+        <div className="text-sm text-zinc-500 truncate">
+          {repo ? (
+            <>
+              Loaded repo: <code>{repo}</code> —{' '}
+              <span className="capitalize">{graphMode} graph</span>
+            </>
+          ) : (
+            'Showing sample dependency graph.'
+          )}
+        </div>
+
         <div className="flex items-center gap-2 text-xs text-zinc-500">
+          <div className="flex border rounded overflow-hidden">
+            <button
+              onClick={() => setGraphMode('code')}
+              className={`px-2 py-1 ${graphMode === 'code' ? 'bg-zinc-700 text-white' : 'hover:bg-zinc-100 dark:hover:bg-zinc-700'}`}
+            >
+              Code
+            </button>
+            <button
+              onClick={() => setGraphMode('contributors')}
+              className={`px-2 py-1 ${graphMode === 'contributors' ? 'bg-zinc-700 text-white' : 'hover:bg-zinc-100 dark:hover:bg-zinc-700'}`}
+            >
+              Contributors
+            </button>
+          </div>
+
           <label className="flex items-center gap-1">
             <input
               type="checkbox"
               checked={showMiniMap}
               onChange={() => setShowMiniMap((prev) => !prev)}
             />
-            Show minimap
+            MiniMap
           </label>
+
           <button
             onClick={() => setIsFullscreen((prev) => !prev)}
             className="border px-2 py-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700"
           >
             {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           </button>
+
           <button
             onClick={exportToJSON}
             className="border px-2 py-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700"
@@ -136,21 +203,47 @@ export default function TestGraph({ repo }: TestGraphProps) {
         </div>
       </div>
 
-      {/* Graph canvas */}
-      <div className="w-full h-[calc(100%-48px)]">
-        <ReactFlow nodes={nodes} edges={edges} fitView>
-          {showMiniMap && (
-            <MiniMap
-              style={{ height: 90, width: 140, borderRadius: 6, opacity: 0.85 }}
-              zoomable
-              pannable
-              nodeStrokeColor={() => '#888'}
-              nodeColor={() => '#333'}
-            />
+      {/* Graph canvas and loading overlay */}
+      <div className="w-full h-[calc(100%-48px)] relative">
+        {!isGraphReady && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/10 dark:bg-white/10 backdrop-blur-sm">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-zinc-300 dark:border-white"></div>
+          </div>
+        )}
+
+        <AnimatePresence mode="wait">
+          {isGraphReady && (
+            <motion.div
+              key={graphMode + repo}
+              className="absolute inset-0"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <ReactFlow nodes={nodes} edges={edges} fitView>
+                {showMiniMap && (
+                  <MiniMap
+                    style={{ height: 90, width: 140, borderRadius: 6, opacity: 0.85 }}
+                    zoomable
+                    pannable
+                    nodeStrokeColor={() => '#888'}
+                    nodeColor={() => '#333'}
+                  />
+                )}
+                <Controls />
+              </ReactFlow>
+            </motion.div>
           )}
-          <Controls />
-        </ReactFlow>
+        </AnimatePresence>
       </div>
     </div>
+  );
+}
+
+export default function TestGraph(props: TestGraphProps) {
+  return (
+    <ReactFlowProvider>
+      <GraphInner {...props} />
+    </ReactFlowProvider>
   );
 }
