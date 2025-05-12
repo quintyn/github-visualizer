@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ReactFlow, {
   MiniMap,
   Controls,
@@ -68,6 +68,11 @@ function GraphInner({ repo }: TestGraphProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { fitView } = useReactFlow();
 
+  const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
+  const url = node.data?.url;
+  if (url) window.open(url, '_blank');
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -88,17 +93,20 @@ function GraphInner({ repo }: TestGraphProps) {
       .then((data) => {
         if (cancelled || !data.nodes || !data.edges) return;
 
-        const rawNodes: Node[] = data.nodes.map((node: { id: string }) => ({
-          id: node.id,
-          data: {
-            label:
-              graphMode === 'code'
-                ? node.id.split('/').pop() || node.id
-                : node.id,
-          },
-          position: { x: 0, y: 0 },
-          type: 'default',
-        }));
+        const rawNodes: Node[] = data.nodes.map((node: { id: string }) => {
+          const fileName = node.id.split('/').pop() || node.id;
+          return {
+            id: node.id,
+            data: {
+              label: graphMode === 'code' ? fileName : node.id,
+              url: graphMode === 'code'
+                ? `https://github.com/${repo}/blob/main/${node.id}`
+                : undefined,
+            },
+            position: { x: 0, y: 0 },
+            type: 'default',
+          };
+        });
 
         const rawEdges: Edge[] = data.edges.map(
           (edge: { source: string; target: string }, index: number) => ({
@@ -163,6 +171,7 @@ function GraphInner({ repo }: TestGraphProps) {
         </div>
 
         <div className="flex items-center gap-2 text-xs text-zinc-500">
+          {/* Mode toggle */}
           <div className="flex border rounded overflow-hidden">
             <button
               onClick={() => setGraphMode('code')}
@@ -178,6 +187,7 @@ function GraphInner({ repo }: TestGraphProps) {
             </button>
           </div>
 
+          {/* Controls */}
           <label className="flex items-center gap-1">
             <input
               type="checkbox"
@@ -186,6 +196,10 @@ function GraphInner({ repo }: TestGraphProps) {
             />
             MiniMap
           </label>
+
+          <button onClick={() => fitView({ padding: 0.2 })} className="border px-2 py-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700">
+            Reset View
+          </button>
 
           <button
             onClick={() => setIsFullscreen((prev) => !prev)}
@@ -220,7 +234,12 @@ function GraphInner({ repo }: TestGraphProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <ReactFlow nodes={nodes} edges={edges} fitView>
+              <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                onNodeClick={onNodeClick}
+                fitView
+              >
                 {showMiniMap && (
                   <MiniMap
                     style={{ height: 90, width: 140, borderRadius: 6, opacity: 0.85 }}

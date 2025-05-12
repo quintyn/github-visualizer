@@ -55,7 +55,7 @@ export async function GET(request: Request) {
 
     // Filter to relevant code files
     const filteredFiles = treeResponse.data.tree.filter(
-      (item) => item.path?.match(/\.(ts|tsx|js|jsx|cpp|h|c|hpp|inl)$/) && item.type === 'blob'
+      (item) => item.path?.match(/\.(ts|tsx|js|jsx|cpp|h|c|hpp|inl|py|go)$/) && item.type === 'blob'
     );
 
     const nodes: Set<string> = new Set();
