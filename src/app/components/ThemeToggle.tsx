@@ -4,10 +4,20 @@ import { useEffect, useState } from 'react';
 
 export default function ThemeToggle() {
   const [dark, setDark] = useState(true);
+  const [mounted, setMounted] = useState(false); // Avoid SSR hydration mismatch
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', dark);
-  }, [dark]);
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      document.documentElement.classList.toggle('dark', dark);
+    }
+  }, [dark, mounted]);
+
+  // Don’t render until client-side mount to avoid mismatch with SSR
+  if (!mounted) return null;
 
   return (
     <button
