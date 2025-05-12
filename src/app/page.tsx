@@ -28,22 +28,27 @@ export default function Page() {
     <div className="flex flex-col h-screen">
       {/* Header section */}
       <div className="p-4 border-b border-zinc-700 dark:bg-zinc-900 flex flex-col gap-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold">GitHub Dependency Visualizer</h2>
+        <div className="flex justify-end items-center">
           <ThemeToggle />
         </div>
+
         <div>
-          <label className="block text-sm font-medium mb-1 text-zinc-300">
+          <label
+            className="block text-sm font-medium mb-1 text-zinc-300"
+            htmlFor="repo-input"
+          >
             Enter GitHub Repo:
           </label>
           <div className="flex gap-2">
             <input
+              id="repo-input"
               type="text"
               className="border rounded px-2 py-1 w-full bg-zinc-900 text-white border-zinc-700"
               placeholder="e.g. vercel/next.js"
               value={repoInput}
               onChange={(e) => setRepoInput(e.target.value)}
               disabled={loading}
+              aria-label="GitHub repository input"
             />
             <button
               onClick={handleLoad}
