@@ -13,6 +13,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import dagre from 'dagre';
 import { motion, AnimatePresence } from 'framer-motion';
+import ContributorNode from '../components/ContributorNode';
 
 type TestGraphProps = {
   repo: string;
@@ -69,6 +70,10 @@ function GraphInner({ repo }: TestGraphProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const { fitView } = useReactFlow();
 
+  const nodeTypes = {
+    contributor: ContributorNode,
+  };
+
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
     const url = node.data?.url;
     if (url) window.open(url, '_blank');
@@ -93,18 +98,19 @@ function GraphInner({ repo }: TestGraphProps) {
       .then((data) => {
         if (cancelled || !data.nodes || !data.edges) return;
 
-        const rawNodes: Node[] = data.nodes.map((node: { id: string }) => {
+        const rawNodes: Node[] = data.nodes.map((node: { id: string; avatarUrl?: string }) => {
           const fileName = node.id.split('/').pop() || node.id;
           return {
             id: node.id,
+            type: graphMode === 'contributors' ? 'contributor' : 'default',
             data: {
               label: graphMode === 'code' ? fileName : node.id,
+              avatarUrl: node.avatarUrl,
               url: graphMode === 'code'
                 ? `https://github.com/${repo}/blob/main/${node.id}`
                 : undefined,
             },
             position: { x: 0, y: 0 },
-            type: 'default',
           };
         });
 
@@ -257,6 +263,7 @@ function GraphInner({ repo }: TestGraphProps) {
                 edges={edges}
                 onNodeClick={onNodeClick}
                 fitView
+                nodeTypes={nodeTypes}
               >
                 {showMiniMap && (
                   <MiniMap

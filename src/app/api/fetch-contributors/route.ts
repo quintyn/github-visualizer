@@ -20,11 +20,13 @@ export async function GET(request: Request) {
           nodes {
             author {
               login
+              avatarUrl
             }
             reviews(first: 10) {
               nodes {
                 author {
                   login
+                  avatarUrl
                 }
               }
             }
@@ -52,25 +54,35 @@ export async function GET(request: Request) {
 
     const pulls = result.data.repository.pullRequests.nodes;
 
+    const nodeMap = new Map<string, { id: string; label: string; avatarUrl: string }>();
     const edges = new Set<string>();
-    const nodes = new Set<string>();
 
     for (const pr of pulls) {
-      const target = pr?.author?.login;
-      if (!target) continue;
-      nodes.add(target);
+      const target = pr?.author;
+      if (!target?.login) continue;
+
+      nodeMap.set(target.login, {
+        id: target.login,
+        label: target.login,
+        avatarUrl: target.avatarUrl,
+      });
 
       for (const review of pr.reviews?.nodes || []) {
-        const source = review?.author?.login;
-        if (!source || source === target) continue;
+        const source = review?.author;
+        if (!source?.login || source.login === target.login) continue;
 
-        nodes.add(source);
-        edges.add(`${source}→${target}`);
+        nodeMap.set(source.login, {
+          id: source.login,
+          label: source.login,
+          avatarUrl: source.avatarUrl,
+        });
+
+        edges.add(`${source.login}→${target.login}`);
       }
     }
 
     return NextResponse.json({
-      nodes: Array.from(nodes).map((id) => ({ id })),
+      nodes: Array.from(nodeMap.values()),
       edges: Array.from(edges).map((e, i) => {
         const [source, target] = e.split('→');
         return { id: `e-${i}`, source, target };
