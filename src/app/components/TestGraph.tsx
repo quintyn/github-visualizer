@@ -66,11 +66,12 @@ function GraphInner({ repo }: TestGraphProps) {
   const [graphMode, setGraphMode] = useState<'code' | 'contributors'>('code');
   const [showMiniMap, setShowMiniMap] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const { fitView } = useReactFlow();
 
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
-  const url = node.data?.url;
-  if (url) window.open(url, '_blank');
+    const url = node.data?.url;
+    if (url) window.open(url, '_blank');
   }, []);
 
   useEffect(() => {
@@ -85,8 +86,7 @@ function GraphInner({ repo }: TestGraphProps) {
 
     setIsGraphReady(false);
 
-    const endpoint =
-      graphMode === 'code' ? '/api/fetch-files' : '/api/fetch-contributors';
+    const endpoint = graphMode === 'code' ? '/api/fetch-files' : '/api/fetch-contributors';
 
     fetch(`${endpoint}?repo=${repo}`)
       .then((res) => res.json())
@@ -155,6 +155,18 @@ function GraphInner({ repo }: TestGraphProps) {
     URL.revokeObjectURL(url);
   };
 
+  const filteredNodes = searchTerm
+    ? nodes.map((node) => ({
+        ...node,
+        style: {
+          opacity: node.data.label.toLowerCase().includes(searchTerm.toLowerCase()) ? 1 : 0.25,
+          border: node.data.label.toLowerCase().includes(searchTerm.toLowerCase())
+            ? '2px solid #3b82f6'
+            : '1px solid #888',
+        },
+      }))
+    : nodes;
+
   return (
     <div className={`${isFullscreen ? 'fixed inset-0 z-[9999]' : 'w-full h-full'} bg-white dark:bg-zinc-800`}>
       {/* Top controls */}
@@ -171,7 +183,14 @@ function GraphInner({ repo }: TestGraphProps) {
         </div>
 
         <div className="flex items-center gap-2 text-xs text-zinc-500">
-          {/* Mode toggle */}
+          <input
+            type="text"
+            placeholder="Search nodes..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="px-2 py-1 border rounded bg-zinc-900 text-white border-zinc-700"
+          />
+
           <div className="flex border rounded overflow-hidden">
             <button
               onClick={() => setGraphMode('code')}
@@ -187,7 +206,6 @@ function GraphInner({ repo }: TestGraphProps) {
             </button>
           </div>
 
-          {/* Controls */}
           <label className="flex items-center gap-1">
             <input
               type="checkbox"
@@ -235,7 +253,7 @@ function GraphInner({ repo }: TestGraphProps) {
               exit={{ opacity: 0 }}
             >
               <ReactFlow
-                nodes={nodes}
+                nodes={filteredNodes}
                 edges={edges}
                 onNodeClick={onNodeClick}
                 fitView
