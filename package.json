@@ -14,9 +14,9 @@
     "dagre": "^0.8.5",
     "framer-motion": "^12.11.0",
     "my-visualizer": "file:",
-    "next": "15.3.2",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "next": "^15.3.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
     "reactflow": "^11.11.4"
   },
   "devDependencies": {

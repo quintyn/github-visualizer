@@ -19,6 +19,16 @@ type TestGraphProps = {
   repo: string;
 };
 
+function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return 'N/A';
+  const date = new Date(dateStr);
+  return date.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
 const staticNodes: Node[] = [
   { id: '1', position: { x: 0, y: 0 }, data: { label: 'fileA.ts' }, type: 'default' },
   { id: '2', position: { x: 200, y: 100 }, data: { label: 'fileB.ts' }, type: 'default' },
@@ -68,6 +78,7 @@ function GraphInner({ repo }: TestGraphProps) {
   const [showMiniMap, setShowMiniMap] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const { fitView } = useReactFlow();
 
   const nodeTypes = {
@@ -75,9 +86,13 @@ function GraphInner({ repo }: TestGraphProps) {
   };
 
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
-    const url = node.data?.url;
-    if (url) window.open(url, '_blank');
-  }, []);
+    if (graphMode === 'contributors') {
+      setSelectedNode(node);
+    } else {
+      const url = node.data?.url;
+      if (url) window.open(url, '_blank');
+    }
+  }, [graphMode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -98,14 +113,17 @@ function GraphInner({ repo }: TestGraphProps) {
       .then((data) => {
         if (cancelled || !data.nodes || !data.edges) return;
 
-        const rawNodes: Node[] = data.nodes.map((node: { id: string; avatarUrl?: string }) => {
+        const rawNodes: Node[] = data.nodes.map((node: any) => {
           const fileName = node.id.split('/').pop() || node.id;
           return {
             id: node.id,
             type: graphMode === 'contributors' ? 'contributor' : 'default',
             data: {
-              label: graphMode === 'code' ? fileName : node.id,
+              label: graphMode === 'code' ? fileName : node.label,
               avatarUrl: node.avatarUrl,
+              prCount: node.prCount,
+              reviewCount: node.reviewCount,
+              lastActivity: node.lastActivity,
               url: graphMode === 'code'
                 ? `https://github.com/${repo}/blob/main/${node.id}`
                 : undefined,
@@ -175,7 +193,6 @@ function GraphInner({ repo }: TestGraphProps) {
 
   return (
     <div className={`${isFullscreen ? 'fixed inset-0 z-[9999]' : 'w-full h-full'} bg-white dark:bg-zinc-800`}>
-      {/* Top controls */}
       <div className="flex flex-wrap justify-between items-center gap-4 px-4 py-2 border-b border-zinc-700 dark:bg-zinc-800">
         <div className="text-sm text-zinc-500 truncate">
           {repo ? (
@@ -241,7 +258,6 @@ function GraphInner({ repo }: TestGraphProps) {
         </div>
       </div>
 
-      {/* Graph canvas and loading overlay */}
       <div className="w-full h-[calc(100%-48px)] relative">
         {!isGraphReady && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/10 dark:bg-white/10 backdrop-blur-sm">
@@ -276,6 +292,30 @@ function GraphInner({ repo }: TestGraphProps) {
                 )}
                 <Controls />
               </ReactFlow>
+
+              {graphMode === 'contributors' && selectedNode && (
+                <div className="absolute top-0 right-0 w-64 h-full bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-700 p-4 shadow-lg z-50">
+                  <h2 className="text-lg font-semibold mb-3 text-zinc-800 dark:text-white">
+                    {selectedNode.data.label}
+                  </h2>
+                  <img
+                    src={selectedNode.data.avatarUrl}
+                    alt={selectedNode.data.label}
+                    className="w-16 h-16 rounded-full border mb-4"
+                  />
+                  <ul className="text-sm space-y-1 text-zinc-700 dark:text-zinc-300">
+                    <li>PRs authored: {selectedNode.data.prCount ?? 'N/A'}</li>
+                    <li>Reviews given: {selectedNode.data.reviewCount ?? 'N/A'}</li>
+                    <li>Last activity: {formatDate(selectedNode.data.lastActivity)}</li>
+                  </ul>
+                  <button
+                    onClick={() => setSelectedNode(null)}
+                    className="mt-4 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Close
+                  </button>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
