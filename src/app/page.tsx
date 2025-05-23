@@ -47,6 +47,9 @@ export default function Page() {
               placeholder="e.g. vercel/next.js"
               value={repoInput}
               onChange={(e) => setRepoInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleLoad();
+              }}
               disabled={loading}
               aria-label="GitHub repository input"
             />
