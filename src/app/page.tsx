@@ -19,7 +19,7 @@ export default function Page() {
 
     setLoading(true);
     setError('');
-    setRepo(''); // Reset current graph before loading new one
+    setRepo('');
     setRepo(repoInput.trim());
     setLoading(false);
   };
@@ -28,18 +28,29 @@ export default function Page() {
     <div className="flex flex-col h-screen">
       {/* Header section */}
       <div className="p-4 border-b border-zinc-700 dark:bg-zinc-900 flex flex-col gap-4">
-        <div className="flex justify-end items-center">
+        <div className="flex justify-between items-center">
+          <label
+            className="block text-sm font-medium text-zinc-300"
+            htmlFor="repo-input"
+          >
+            GitHub Dependency Visualizer
+          </label>
           <ThemeToggle />
         </div>
 
-        <div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleLoad();
+          }}
+        >
           <label
             className="block text-sm font-medium mb-1 text-zinc-300"
             htmlFor="repo-input"
           >
             Enter GitHub Repo:
           </label>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <input
               id="repo-input"
               type="text"
@@ -47,14 +58,11 @@ export default function Page() {
               placeholder="e.g. vercel/next.js"
               value={repoInput}
               onChange={(e) => setRepoInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleLoad();
-              }}
               disabled={loading}
               aria-label="GitHub repository input"
             />
             <button
-              onClick={handleLoad}
+              type="submit"
               disabled={loading}
               className="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
             >
@@ -62,7 +70,7 @@ export default function Page() {
             </button>
           </div>
           {error && <p className="text-red-500 mt-1">{error}</p>}
-        </div>
+        </form>
       </div>
 
       {/* Graph area */}
