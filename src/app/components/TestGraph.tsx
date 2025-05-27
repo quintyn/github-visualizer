@@ -88,6 +88,7 @@ function GraphInner({ repo }: TestGraphProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
   const { fitView } = useReactFlow();
 
   const nodeTypes = { contributor: ContributorNode };
@@ -101,24 +102,20 @@ function GraphInner({ repo }: TestGraphProps) {
     }
   }, [graphMode]);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    if (!repo) {
-      setNodes(staticNodes);
-      setEdges(staticEdges);
-      setIsGraphReady(true);
-      return;
-    }
-
+  const fetchData = () => {
     setIsGraphReady(false);
+    setErrorMessage('');
 
     const endpoint = graphMode === 'code' ? '/api/fetch-files' : '/api/fetch-contributors';
 
     fetch(`${endpoint}?repo=${repo}`)
       .then((res) => res.json())
       .then((data) => {
-        if (cancelled || !data.nodes || !data.edges) return;
+        if (!data.nodes || !data.edges) {
+          setErrorMessage('No data returned. Check the repository name or try again.');
+          setIsGraphReady(true);
+          return;
+        }
 
         const rawNodes: Node[] = data.nodes.map((node: any) => {
           const fileName = node.id.split('/').pop() || node.id;
@@ -153,19 +150,24 @@ function GraphInner({ repo }: TestGraphProps) {
         setIsGraphReady(true);
       })
       .catch((err) => {
-        if (!cancelled) {
-          console.error('Error fetching graph data:', graphMode, err);
-          setIsGraphReady(true);
-        }
+        console.error('Error fetching graph data:', graphMode, err);
+        setErrorMessage('Failed to fetch graph data. Check your network or try again.');
+        setIsGraphReady(true);
       });
+  };
 
-    return () => {
-      cancelled = true;
-    };
+  useEffect(() => {
+    if (!repo) {
+      setNodes(staticNodes);
+      setEdges(staticEdges);
+      setIsGraphReady(true);
+      return;
+    }
+    fetchData();
   }, [repo, graphMode]);
 
   useEffect(() => {
-    if (!isGraphReady) return;
+    if (!isGraphReady || errorMessage) return;
     requestAnimationFrame(() => {
       try {
         fitView({ padding: 0.2 });
@@ -173,7 +175,7 @@ function GraphInner({ repo }: TestGraphProps) {
         console.warn('fitView error:', err);
       }
     });
-  }, [isGraphReady, fitView]);
+  }, [isGraphReady, fitView, errorMessage]);
 
   const exportToJSON = () => {
     const dataStr = JSON.stringify({ nodes, edges }, null, 2);
@@ -200,12 +202,21 @@ function GraphInner({ repo }: TestGraphProps) {
 
   return (
     <div className={`${isFullscreen ? 'fixed inset-0 z-[9999]' : 'w-full h-full'} bg-white dark:bg-zinc-800`}>
+      {errorMessage && (
+        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-4 py-2 rounded shadow z-50">
+          <p>{errorMessage}</p>
+          <button onClick={fetchData} className="mt-2 underline text-sm">
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* Toolbar and Canvas */}
       <div className="flex flex-wrap justify-between items-center gap-4 px-4 py-2 border-b border-zinc-700 dark:bg-zinc-800">
         <div className="text-sm text-zinc-500 truncate">
           {repo ? (
             <>
-              Loaded repo: <code>{repo}</code> —{' '}
-              <span className="capitalize">{graphMode} graph</span>
+              Loaded repo: <code>{repo}</code> — <span className="capitalize">{graphMode} graph</span>
             </>
           ) : (
             'Showing sample dependency graph.'
