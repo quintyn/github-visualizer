@@ -154,17 +154,33 @@ function GraphInner({ repo }: TestGraphProps) {
     URL.revokeObjectURL(url);
   };
 
-  const filteredNodes = searchTerm
-    ? nodes.map((node) => ({
-        ...node,
-        style: {
-          opacity: node.data.label.toLowerCase().includes(searchTerm.toLowerCase()) ? 1 : 0.25,
-          border: node.data.label.toLowerCase().includes(searchTerm.toLowerCase())
-            ? '2px solid #3b82f6'
-            : '1px solid #888',
-        },
-      }))
-    : nodes;
+  const extensionColorMap: Record<string, string> = {
+  ts: '#3b82f6',      // blue
+  js: '#facc15',      // yellow
+  css: '#10b981',     // green
+  json: '#ec4899',    // pink
+  html: '#f97316',    // orange
+  md: '#8b5cf6',      // purple
+};
+
+function getNodeColorByExtension(id: string): string {
+  const ext = id.split('.').pop() || '';
+  return extensionColorMap[ext] || '#64748b'; // fallback: slate gray
+}
+
+  const filteredNodes = nodes.map((node) => {
+  const isMatch = node.data.label.toLowerCase().includes(searchTerm.toLowerCase());
+  return {
+    ...node,
+    style: {
+      background: getNodeColorByExtension(node.id),
+      color: 'white',
+      opacity: searchTerm ? (isMatch ? 1 : 0.3) : 1,
+      border: isMatch ? '2px solid #3b82f6' : '1px solid #888',
+    },
+  };
+});
+
 
   return (
     <div className={`${isFullscreen ? 'fixed inset-0 z-[9999]' : 'w-full h-full'} bg-white dark:bg-zinc-800`}>
