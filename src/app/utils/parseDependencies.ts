@@ -6,6 +6,11 @@ export type Dependency = {
 export function extractDependencies(source: string, content: string): Dependency[] {
   const deps: Dependency[] = [];
 
+  // Remove single-line and multi-line comments
+  const codeWithoutComments = content
+    .replace(/\/\/.*$/gm, '')               // Remove single-line comments
+    .replace(/\/\*[\s\S]*?\*\//gm, '');     // Remove multi-line comments
+
   const patterns = [
     /import\s+.*?['"](.+?)['"]/g,
     /require\(['"](.+?)['"]\)/g,
@@ -13,7 +18,7 @@ export function extractDependencies(source: string, content: string): Dependency
   ];
 
   for (const pattern of patterns) {
-    for (const match of content.matchAll(pattern)) {
+    for (const match of codeWithoutComments.matchAll(pattern)) {
       const target = match[1];
       if (
         target.startsWith('.') ||
