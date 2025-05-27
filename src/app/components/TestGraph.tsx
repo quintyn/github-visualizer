@@ -1,3 +1,5 @@
+// FULL UPDATED FILE
+
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -6,7 +8,6 @@ import ReactFlow, {
   Controls,
   Node,
   Edge,
-  Position,
   useReactFlow,
   ReactFlowProvider,
 } from 'reactflow';
@@ -54,6 +55,7 @@ function GraphInner({ repo }: TestGraphProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const { fitView } = useReactFlow();
 
@@ -155,35 +157,35 @@ function GraphInner({ repo }: TestGraphProps) {
   };
 
   const extensionColorMap: Record<string, string> = {
-  ts: '#3b82f6',      // blue
-  js: '#facc15',      // yellow
-  css: '#10b981',     // green
-  json: '#ec4899',    // pink
-  html: '#f97316',    // orange
-  md: '#8b5cf6',      // purple
-};
+    ts: '#3b82f6',
+    js: '#facc15',
+    css: '#10b981',
+    json: '#ec4899',
+    html: '#f97316',
+    md: '#8b5cf6',
+  };
 
-function getNodeColorByExtension(id: string): string {
-  const ext = id.split('.').pop() || '';
-  return extensionColorMap[ext] || '#64748b'; // fallback: slate gray
-}
+  function getNodeColorByExtension(id: string): string {
+    const ext = id.split('.').pop() || '';
+    return extensionColorMap[ext] || '#64748b';
+  }
 
   const filteredNodes = nodes.map((node) => {
-  const isMatch = node.data.label.toLowerCase().includes(searchTerm.toLowerCase());
-  return {
-    ...node,
-    style: {
-      background: getNodeColorByExtension(node.id),
-      color: 'white',
-      opacity: searchTerm ? (isMatch ? 1 : 0.3) : 1,
-      border: isMatch ? '2px solid #3b82f6' : '1px solid #888',
-    },
-  };
-});
-
+    const isMatch = node.data.label.toLowerCase().includes(searchTerm.toLowerCase());
+    return {
+      ...node,
+      style: {
+        background: getNodeColorByExtension(node.id),
+        color: 'white',
+        opacity: searchTerm ? (isMatch ? 1 : 0.3) : 1,
+        border: isMatch ? '2px solid #3b82f6' : '1px solid #888',
+      },
+    };
+  });
 
   return (
     <div className={`${isFullscreen ? 'fixed inset-0 z-[9999]' : 'w-full h-full'} bg-white dark:bg-zinc-800`}>
+      {/* ERROR MESSAGE */}
       {errorMessage && (
         <div className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-4 py-2 rounded shadow z-50">
           <p>{errorMessage}</p>
@@ -193,13 +195,11 @@ function getNodeColorByExtension(id: string): string {
         </div>
       )}
 
-      {/* Toolbar and Canvas */}
+      {/* TOOLBAR */}
       <div className="flex flex-wrap justify-between items-center gap-4 px-4 py-2 border-b border-zinc-700 dark:bg-zinc-800">
         <div className="text-sm text-zinc-500 truncate">
           {repo ? (
-            <>
-              Loaded repo: <code>{repo}</code> — <span className="capitalize">{graphMode} graph</span>
-            </>
+            <>Loaded repo: <code>{repo}</code> — <span className="capitalize">{graphMode} graph</span></>
           ) : (
             'Showing sample dependency graph.'
           )}
@@ -215,16 +215,10 @@ function getNodeColorByExtension(id: string): string {
           />
 
           <div className="flex border rounded overflow-hidden">
-            <button
-              onClick={() => setGraphMode('code')}
-              className={`px-2 py-1 ${graphMode === 'code' ? 'bg-zinc-700 text-white' : 'hover:bg-zinc-100 dark:hover:bg-zinc-700'}`}
-            >
+            <button onClick={() => setGraphMode('code')} className={`px-2 py-1 ${graphMode === 'code' ? 'bg-zinc-700 text-white' : 'hover:bg-zinc-100 dark:hover:bg-zinc-700'}`}>
               Code
             </button>
-            <button
-              onClick={() => setGraphMode('contributors')}
-              className={`px-2 py-1 ${graphMode === 'contributors' ? 'bg-zinc-700 text-white' : 'hover:bg-zinc-100 dark:hover:bg-zinc-700'}`}
-            >
+            <button onClick={() => setGraphMode('contributors')} className={`px-2 py-1 ${graphMode === 'contributors' ? 'bg-zinc-700 text-white' : 'hover:bg-zinc-100 dark:hover:bg-zinc-700'}`}>
               Contributors
             </button>
           </div>
@@ -233,33 +227,21 @@ function getNodeColorByExtension(id: string): string {
             <button onClick={() => fitView({ padding: 0.2 })} className="border px-2 py-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700">
               Reset View
             </button>
-
-            <button
-              onClick={() => setIsFullscreen((prev) => !prev)}
-              className="border px-2 py-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700"
-            >
+            <button onClick={() => setIsFullscreen((prev) => !prev)} className="border px-2 py-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700">
               {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
             </button>
-
-            <button
-              onClick={exportToJSON}
-              className="border px-2 py-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700"
-            >
+            <button onClick={exportToJSON} className="border px-2 py-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-700">
               Export JSON
             </button>
-
             <label className="flex items-center gap-1">
-              <input
-                type="checkbox"
-                checked={showMiniMap}
-                onChange={() => setShowMiniMap((prev) => !prev)}
-              />
+              <input type="checkbox" checked={showMiniMap} onChange={() => setShowMiniMap((prev) => !prev)} />
               MiniMap
             </label>
           </div>
         </div>
       </div>
 
+      {/* GRAPH + SIDEPANEL */}
       <div className="w-full h-[calc(100%-48px)] relative">
         {!isGraphReady && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/10 dark:bg-white/10 backdrop-blur-sm">
@@ -280,6 +262,12 @@ function getNodeColorByExtension(id: string): string {
                 nodes={filteredNodes}
                 edges={edges}
                 onNodeClick={onNodeClick}
+                onNodeMouseEnter={(_, node) => {
+                  if (graphMode === 'code') setHoveredNodeId(node.id);
+                }}
+                onNodeMouseLeave={() => {
+                  if (graphMode === 'code') setHoveredNodeId(null);
+                }}
                 fitView
                 nodeTypes={nodeTypes}
               >
@@ -295,6 +283,14 @@ function getNodeColorByExtension(id: string): string {
                 <Controls />
               </ReactFlow>
 
+              {/* TOOLTIP FOR HOVERED NODE */}
+              {hoveredNodeId && graphMode === 'code' && (
+                <div className="absolute pointer-events-none text-xs text-white bg-zinc-700 px-2 py-1 rounded shadow top-2 left-2 z-50 animate-fadeIn">
+                  {hoveredNodeId}
+                </div>
+              )}
+
+              {/* CONTRIBUTOR SIDE PANEL */}
               {graphMode === 'contributors' && selectedNode && (
                 <div className="absolute top-0 right-0 w-64 h-full bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-700 p-4 shadow-lg z-50">
                   <h2 className="text-lg font-semibold mb-3 text-zinc-800 dark:text-white">
