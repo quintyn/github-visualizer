@@ -1,6 +1,7 @@
 import './globals.css';
 import { Inter } from 'next/font/google';
 import Head from 'next/head';
+import ThemeToggle from './components/ThemeToggle';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -19,6 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="min-h-screen flex flex-col">
           <header className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
             <h1 className="text-xl font-semibold">GitHub Dependency Visualizer</h1>
+            <ThemeToggle />
           </header>
           <main className="flex-1 p-6">{children}</main>
         </div>
