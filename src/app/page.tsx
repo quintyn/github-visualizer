@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { ReactFlowProvider } from 'reactflow';
 import TestGraph from './components/TestGraph';
-import ThemeToggle from './components/ThemeToggle';
 
 export default function Page() {
   const [repoInput, setRepoInput] = useState('');
@@ -29,7 +28,6 @@ export default function Page() {
     {/* Header */}
     <header className="p-4 border-b border-zinc-700 dark:bg-zinc-900 shadow-sm">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <ThemeToggle />
       </div>
 
       <form
