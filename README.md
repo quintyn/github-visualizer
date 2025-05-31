@@ -1,5 +1,15 @@
 # GitHub Dependency & Collaboration Visualizer
 
+[![Next.js](https://img.shields.io/badge/Next.js-15.3-blue?logo=nextdotjs)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-06B6D4?logo=tailwindcss)](https://tailwindcss.com/)
+[![React Flow](https://img.shields.io/badge/React_Flow-11.8-61DAFB?logo=react)](https://reactflow.dev/)
+[![Framer Motion](https://img.shields.io/badge/Framer_Motion-10.16-000000?logo=framer)](https://www.framer.com/motion/)
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed_on-Vercel-black?logo=vercel)](https://github-visualizer-unes-git-main-quintyns-projects-e3d867d4.vercel.app/)
+[![Last Commit](https://img.shields.io/github/last-commit/quintyn/github-visualizer)](https://github.com/quintyn/github-visualizer/commits/main)
+[![MIT License](https://img.shields.io/github/license/quintyn/github-visualizer)](https://github.com/quintyn/github-visualizer/blob/main/LICENSE)
+
+
 Visualize internal file dependencies and contributor networks from any public GitHub repository.
 
 [Try the Live Demo](https://github-visualizer-unes-git-main-quintyns-projects-e3d867d4.vercel.app/)
