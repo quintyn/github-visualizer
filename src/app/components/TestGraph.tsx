@@ -244,10 +244,13 @@ function GraphInner({ repo }: TestGraphProps) {
       {/* GRAPH + SIDEPANEL */}
       <div className="w-full h-[calc(100%-48px)] relative">
         {!isGraphReady && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/10 dark:bg-white/10 backdrop-blur-sm">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-zinc-300 dark:border-white"></div>
-          </div>
-        )}
+  <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/20 backdrop-blur-sm px-4 text-center">
+    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-white mb-4" />
+    <p className="text-sm text-zinc-100 max-w-xs">
+      Fetching and analyzing source files… This may take up to 20 seconds on large repositories.
+    </p>
+  </div>
+)}
 
         <AnimatePresence mode="wait">
           {isGraphReady && (
