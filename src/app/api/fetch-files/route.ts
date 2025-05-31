@@ -1,9 +1,8 @@
 import { Octokit } from '@octokit/rest';
 import { NextResponse } from 'next/server';
 
-// In-memory cache to reduce GitHub API calls
 const memoryCache = new Map<string, { timestamp: number; data: any }>();
-const CACHE_DURATION_MS = 10 * 60 * 1000; // 10 minutes
+const CACHE_DURATION_MS = 10 * 60 * 1000;
 
 function extractDependencies(source: string, content: string) {
   const deps: { source: string; target: string }[] = [];
@@ -37,7 +36,7 @@ const octokit = new Octokit({
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const repoParam = url.searchParams.get('repo'); // Format: owner/repo
+  const repoParam = url.searchParams.get('repo');
 
   if (!repoParam) {
     return NextResponse.json({ error: 'Missing ?repo=owner/repo param' }, { status: 400 });
@@ -56,38 +55,31 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Get default branch
-    let defaultBranch = 'main';
-    try {
-      const repoData = await octokit.repos.get({ owner, repo });
-      defaultBranch = repoData.data.default_branch || 'main';
-    } catch (err) {
-      console.warn(`Failed to get default branch for ${owner}/${repo}`, err);
-    }
+    const repoData = await octokit.repos.get({ owner, repo });
+    const defaultBranch = repoData.data.default_branch;
 
-    // Get commit SHA for default branch
-    const branch = await octokit.repos.getBranch({ owner, repo, branch: defaultBranch });
-    const commitSha = branch.data.commit.sha;
-
-    // Get tree using commit SHA
     const treeResponse = await octokit.git.getTree({
       owner,
       repo,
-      tree_sha: commitSha,
-      recursive: 'true',
+      tree_sha: defaultBranch,
+      recursive: "true", // Fix for TS error
     });
 
-    const filteredFiles = treeResponse.data.tree.filter(
-      (item) =>
-        item.path?.match(/\.(ts|tsx|js|jsx|cpp|h|c|hpp|inl|py|go)$/) &&
-        item.type === 'blob'
-    );
+    const filteredFiles = treeResponse.data.tree
+      .filter(
+        (item) =>
+          item.path?.match(/\.(ts|tsx|js|jsx|cpp|h|c|hpp|inl|py|go)$/) &&
+          item.type === 'blob'
+      )
+      .slice(0, 100); // Cap to 100 files max
 
     const nodes: Set<string> = new Set();
     const edges: { source: string; target: string }[] = [];
 
     for (const file of filteredFiles) {
       try {
+        console.log(`Processing ${file.path}`);
+
         const contentRes = await octokit.repos.getContent({
           owner,
           repo,
@@ -96,12 +88,6 @@ export async function GET(request: Request) {
         });
 
         if (!Array.isArray(contentRes.data) && contentRes.data.type === 'file') {
-          // Skip large files
-          if (contentRes.data.size && contentRes.data.size > 50000) {
-            console.warn(`Skipping large file: ${file.path}`);
-            continue;
-          }
-
           const decoded = Buffer.from(contentRes.data.content, 'base64').toString('utf8');
           nodes.add(file.path!);
 
@@ -124,6 +110,7 @@ export async function GET(request: Request) {
     };
 
     memoryCache.set(cacheKey, { timestamp: Date.now(), data: graphData });
+
     return NextResponse.json(graphData);
   } catch (error) {
     console.error('GitHub API error:', error);

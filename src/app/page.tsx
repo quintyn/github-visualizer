@@ -68,10 +68,11 @@ export default function Page() {
     {/* Graph */}
     <main className="flex-1 min-h-0 relative">
       {loading && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/20 backdrop-blur-sm">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-white" />
-        </div>
-      )}
+  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/20 backdrop-blur-sm text-white text-sm gap-2">
+    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-white" />
+    <p>Parsing files and building dependency graph…</p>
+  </div>
+)}
       <ReactFlowProvider>
         <TestGraph repo={repo} />
       </ReactFlowProvider>
